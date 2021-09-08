@@ -28,7 +28,6 @@ export default {
       activeIndex: 0,
       left: 0,
       xStart: null,
-      xCurr: null,
       xEnd: null,
       innerStyles: {},
       step: null,
@@ -36,23 +35,23 @@ export default {
       transitioning: false,
       items: [
         {
-          index: 1,
+          index: 0,
           msg: "1st Carousel",
         },
         {
-          index: 2,
+          index: 1,
           msg: "2nd Carousel",
         },
         {
-          index: 3,
+          index: 2,
           msg: "3rd Carousel",
         },
         {
-          index: 4,
+          index: 3,
           msg: "4th Carousel",
         },
         {
-          index: 5,
+          index: 4,
           msg: "5th Carousel",
         },
       ],
@@ -65,19 +64,26 @@ export default {
   },
   watch: {
     xEnd(val) {
-      if (val - this.xStart < -50) {
+      if (val - this.xStart < -100) {
         if (this.activeIndex !== this.items.length - 1) {
+          this.activeIndex += 1;
           this.next();
         } else {
           this.$refs.inner.style.left =
             -(this.step * (this.items.length - 1)) + "px";
+          this.left = -(this.step * (this.items.length - 1));
         }
-      } else if (val - this.xStart > 50) {
+      } else if (val - this.xStart > 100) {
         if (this.activeIndex !== 0) {
+          this.activeIndex -= 1;
           this.prev();
         } else {
-          this.$refs.inner.style.left = this.left;
+          this.$refs.inner.style.left = 0;
+          this.left = 0;
         }
+      } else {
+        this.$refs.inner.style.left = `${-this.activeIndex * this.step}px`;
+        this.left = -this.activeIndex * this.step;
       }
     },
   },
@@ -94,6 +100,8 @@ export default {
       this.transitioning = true;
       this.moveLeft();
       this.afterTransition(() => {
+        this.left = -this.activeIndex * this.step;
+        this.$refs.inner.style.left = `${this.left}px`;
         this.resetTranslate();
         this.transitioning = false;
       });
@@ -105,26 +113,20 @@ export default {
       this.transitioning = true;
       this.moveRight();
       this.afterTransition(() => {
+        this.left = -this.activeIndex * this.step;
+        this.$refs.inner.style.left = `${this.left}px`;
         this.resetTranslate();
         this.transitioning = false;
       });
     },
     moveLeft() {
-      const currIndex = Math.abs(this.left) / this.step;
-      const transform = this.step - (this.left % this.step);
-      this.activeIndex = currIndex + 1;
-      this.left = -this.activeIndex * this.step;
-      this.$refs.inner.style.left = `${this.left}px`;
+      const transform = -this.activeIndex * this.step - this.left;
       this.innerStyles = {
-        transform: `translateX(-${transform}px)`,
+        transform: `translateX(${transform}px)`,
       };
     },
     moveRight() {
-      const currIndex = Math.abs(this.left) / this.step;
-      const transform = this.step + (this.left % this.step);
-      this.activeIndex = currIndex - 1;
-      this.left = -this.activeIndex * this.step;
-      this.$refs.inner.style.left = `${this.left}px`;
+      const transform = -(this.activeIndex * this.step + this.left);
       this.innerStyles = {
         transform: `translateX(${transform}px) `,
       };
@@ -134,12 +136,11 @@ export default {
       this.xStart = e.changedTouches[0].clientX;
     },
     handleDragMove(e) {
-      this.xCurr = this.xStart;
-      this.drag = e.changedTouches[0].clientX - this.xCurr;
-      this.xCurr = e.changedTouches[0].clientX;
+      this.drag = e.changedTouches[0].clientX - this.xStart;
       this.$refs.inner.style.left = `${this.left + this.drag}px`;
     },
     handleDragEnd(e) {
+      this.left = parseInt(this.$refs.inner.style.left);
       this.xEnd = e.changedTouches[0].clientX;
     },
 
