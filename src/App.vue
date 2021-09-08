@@ -25,6 +25,8 @@ export default {
   data() {
     return {
       drag: 0,
+      activeIndex: 0,
+      left: 0,
       xStart: null,
       xCurr: null,
       xEnd: null,
@@ -63,10 +65,19 @@ export default {
   },
   watch: {
     xEnd(val) {
-      if (val - this.xStart < -100) {
-        this.next();
-      } else if (val - this.xStart > 100) {
-        this.prev();
+      if (val - this.xStart < -50) {
+        if (this.activeIndex !== this.items.length - 1) {
+          this.next();
+        } else {
+          this.$refs.inner.style.left =
+            -(this.step * (this.items.length - 1)) + "px";
+        }
+      } else if (val - this.xStart > 50) {
+        if (this.activeIndex !== 0) {
+          this.prev();
+        } else {
+          this.$refs.inner.style.left = this.left;
+        }
       }
     },
   },
@@ -83,8 +94,6 @@ export default {
       this.transitioning = true;
       this.moveLeft();
       this.afterTransition(() => {
-        const card = this.items.shift();
-        this.items.push(card);
         this.resetTranslate();
         this.transitioning = false;
       });
@@ -96,22 +105,28 @@ export default {
       this.transitioning = true;
       this.moveRight();
       this.afterTransition(() => {
-        const card = this.items.pop();
-        this.items.unshift(card);
         this.resetTranslate();
         this.transitioning = false;
       });
     },
     moveLeft() {
+      const currIndex = Math.abs(this.left) / this.step;
+      const transform = this.step - (this.left % this.step);
+      this.activeIndex = currIndex + 1;
+      this.left = -this.activeIndex * this.step;
+      this.$refs.inner.style.left = `${this.left}px`;
       this.innerStyles = {
-        transform: `translateX(-${this.step + this.drag}px)
-                    translateX(-${this.step}px)`,
+        transform: `translateX(-${transform}px)`,
       };
     },
     moveRight() {
+      const currIndex = Math.abs(this.left) / this.step;
+      const transform = this.step + (this.left % this.step);
+      this.activeIndex = currIndex - 1;
+      this.left = -this.activeIndex * this.step;
+      this.$refs.inner.style.left = `${this.left}px`;
       this.innerStyles = {
-        transform: `translateX(${this.step - this.drag}px)
-                     translateX(-${this.step}px)`,
+        transform: `translateX(${transform}px) `,
       };
     },
 
@@ -122,8 +137,7 @@ export default {
       this.xCurr = this.xStart;
       this.drag = e.changedTouches[0].clientX - this.xCurr;
       this.xCurr = e.changedTouches[0].clientX;
-      const inner = this.$refs.inner;
-      inner.style.left = this.drag + "px";
+      this.$refs.inner.style.left = `${this.left + this.drag}px`;
     },
     handleDragEnd(e) {
       this.xEnd = e.changedTouches[0].clientX;
@@ -139,7 +153,6 @@ export default {
     resetTranslate() {
       this.innerStyles = {
         transition: "none",
-        transform: `translateX(-${this.step}px)`,
       };
     },
   },
@@ -153,9 +166,8 @@ export default {
   overflow: hidden;
 }
 .inner {
-  transition: transform 0.2s;
+  transition: transform 0.5s;
   white-space: nowrap;
   position: relative;
-  left: 0;
 }
 </style>
